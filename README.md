@@ -7,12 +7,12 @@ Simple algorithm for crawling and reproducing ants, initially designed for a [No
 
 ## Building (OS X, with Homebrew)
 
-  brew install sdl2
-  ./build.sh
+    brew install sdl2
+    ./build.sh
 
 ## Running
 
-  ./ants
+    ./ants
 
 Note that, because none of the ants die, the algorithm will keep on generating new ants, grinding the algorithm to a halt. That's sort of the point.
 
