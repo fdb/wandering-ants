@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "../vendor/nanovg/nanovg.h"
 #include <OpenGL/GL.h>
@@ -23,6 +24,10 @@
 #define ANT_RADIUS 2.0
 #define TRAIL_CAPACITY 5000
 #define SKIP_FRAMES 0
+#define RANDOM_SEED 47
+#define SAVE_FRAME 1
+
+// Good random seeds: 10, 12, 32, 47
 
 typedef struct {
   float x;
@@ -100,9 +105,10 @@ void ant_random_dir(ant_t *ant) {
 }
 
 void ant_init(ant_t *ant) {
-  ant->x = BUFFER_WIDTH / 4 + rand_float(0, BUFFER_WIDTH / 2);
-  ant->y = BUFFER_HEIGHT / 4 + rand_float(0, BUFFER_HEIGHT / 2);
-  ;
+  // ant->x = BUFFER_WIDTH / 4 + rand_float(0, BUFFER_WIDTH / 2);
+  // ant->y = BUFFER_HEIGHT / 4 + rand_float(0, BUFFER_HEIGHT / 2);
+  ant->x = rand_float(0, BUFFER_WIDTH);
+  ant->y = rand_float(0, BUFFER_HEIGHT);
   ant_random_dir(ant);
   ant->trail = calloc(TRAIL_CAPACITY, sizeof(point_t));
 }
@@ -205,10 +211,7 @@ int save_tga(int frame, uint8_t *buffer, int width, int height) {
 }
 
 int main() {
-  // 10
-  // 12
-  // 32
-  srand(32);
+  srand(RANDOM_SEED);
 
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     fprintf(stderr, "Could not init video.\n");
@@ -246,8 +249,9 @@ int main() {
 
   int running = 1;
   int frame = 0;
+
   while (running) {
-    printf("%4d\n", frame);
+    clock_t start = clock();
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0) {
       if (e.type == SDL_QUIT) {
@@ -261,11 +265,18 @@ int main() {
     }
     render(vg, &ant_colony);
 
-    glReadPixels(0, 0, BUFFER_WIDTH, BUFFER_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE,
-                 pixel_buffer);
-    save_tga(frame, pixel_buffer, BUFFER_WIDTH, BUFFER_HEIGHT);
+    if (SAVE_FRAME) {
+      glReadPixels(0, 0, BUFFER_WIDTH, BUFFER_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE,
+                   pixel_buffer);
+      save_tga(frame, pixel_buffer, BUFFER_WIDTH, BUFFER_HEIGHT);
+    }
+
     SDL_GL_SwapWindow(window);
     frame++;
+    clock_t diff = clock() - start;
+    int msec = diff * 1000 / CLOCKS_PER_SEC;
+
+    printf("%4d %.2fs\n", frame, msec / 1000.0f);
   }
 
   return 0;
