@@ -1,14 +1,13 @@
 #include <math.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <time.h>
 
-#include "../vendor/nanovg/nanovg.h"
-#include <OpenGL/GL.h>
 #include <OpenGL/gl3.h>
 #include <SDL2/SDL.h>
-//#include <SDL2/SDL_opengl.h>
 
 #define NANOVG_GL3_IMPLEMENTATION
+#include "../vendor/nanovg/nanovg.h"
 #include "../vendor/nanovg/nanovg_gl.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -16,6 +15,8 @@
 
 #define BUFFER_WIDTH 1920
 #define BUFFER_HEIGHT 1080
+#define WINDOW_WIDTH (BUFFER_WIDTH / 2)
+#define WINDOW_HEIGHT (BUFFER_HEIGHT / 2)
 #define MAX_ANTS 1000000
 #define ANT_SPEED 2.0
 #define ANT_INITIAL_COUNT 30
@@ -24,10 +25,10 @@
 #define ANT_RADIUS 2.0
 #define TRAIL_CAPACITY 5000
 #define SKIP_FRAMES 0
-#define RANDOM_SEED 47
-#define SAVE_FRAME 1
-
-// Good random seeds: 10, 12, 32, 47
+#define RANDOM_SEED 47 // Good random seeds: 10, 12, 32, 47
+#define SAVE_FRAME 0
+#define DISPLAY_TIME 0
+#define OUT_DIRECTORY "_out"
 
 typedef struct {
   float x;
@@ -181,7 +182,7 @@ void ant_colony_vicinity_breed(ant_colony_t *colony) {
 
 int save_ppm(int frame, uint8_t *buffer, int width, int height) {
   char filename[512];
-  snprintf(filename, 512, "/Users/fdb/Desktop/_out/frame%04d.ppm", frame);
+  snprintf(filename, 512, OUT_DIRECTORY "/frame%04d.ppm", frame);
   FILE *fp = fopen(filename, "wb");
   if (!fp) {
     fprintf(stderr, "Error: could not open file %s for writing.\n", filename);
@@ -200,18 +201,29 @@ int save_ppm(int frame, uint8_t *buffer, int width, int height) {
 
 int save_png(int frame, uint8_t *buffer, int width, int height) {
   char filename[512];
-  snprintf(filename, 512, "/Users/fdb/Desktop/_out/frame%04d.png", frame);
+  snprintf(filename, 512, OUT_DIRECTORY "/frame%04d.png", frame);
   return stbi_write_png(filename, width, height, 3, buffer, width * 3);
 }
 
 int save_tga(int frame, uint8_t *buffer, int width, int height) {
   char filename[512];
-  snprintf(filename, 512, "/Users/fdb/Desktop/_out/frame%04d.tga", frame);
+  snprintf(filename, 512, OUT_DIRECTORY "/frame%04d.tga", frame);
   return stbi_write_tga(filename, width, height, 3, buffer);
 }
 
 int main() {
   srand(RANDOM_SEED);
+
+  if (SAVE_FRAME) {
+    struct stat st = {0};
+    if (stat(OUT_DIRECTORY, &st) == -1) {
+      int err = mkdir(OUT_DIRECTORY, 0700);
+      if (err != 0) {
+        fprintf(stderr, "Could not create _out directory (Error %d).\n", err);
+        exit(-1);
+      }
+    }
+  }
 
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     fprintf(stderr, "Could not init video.\n");
@@ -232,7 +244,7 @@ int main() {
 
   SDL_Window *window = SDL_CreateWindow(
       "Wandering Ants", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-      BUFFER_WIDTH / 2, BUFFER_HEIGHT / 2, SDL_WINDOW_ALLOW_HIGHDPI);
+      WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_ALLOW_HIGHDPI);
 
   SDL_GLContext ctx = SDL_GL_CreateContext(window);
   if (!ctx) {
@@ -272,11 +284,14 @@ int main() {
     }
 
     SDL_GL_SwapWindow(window);
-    frame++;
-    clock_t diff = clock() - start;
-    int msec = diff * 1000 / CLOCKS_PER_SEC;
 
-    printf("%4d %.2fs\n", frame, msec / 1000.0f);
+    if (DISPLAY_TIME) {
+      clock_t diff = clock() - start;
+      int msec = diff * 1000 / CLOCKS_PER_SEC;
+      printf("%4d %.2fs\n", frame, msec / 1000.0f);
+    }
+
+    frame++;
   }
 
   return 0;
