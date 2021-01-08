@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <time.h>
 
+#define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
 #include <SDL2/SDL.h>
 
@@ -25,7 +26,7 @@
 #define ANT_RADIUS 2.0
 #define TRAIL_CAPACITY 5000
 #define SKIP_FRAMES 0
-#define RANDOM_SEED 47 // Good random seeds: 10, 12, 32, 47
+#define RANDOM_SEED 47  // Good random seeds: 10, 12, 32, 47
 #define SAVE_FRAME 0
 #define DISPLAY_TIME 0
 #define OUT_DIRECTORY "_out"
